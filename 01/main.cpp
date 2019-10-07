@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <queue>
+#include <cstdlib>
 
 using namespace std;
 
@@ -23,7 +24,13 @@ struct Vertex
     list<int> adjencent;
 };
 
-void fill_nearest(int r, int c, list<int> &adjencent)
+struct Distance
+{
+    int neighbor_idx;
+    int weight;
+};
+
+void fill_nearest(const int r, const int c, list<int> &adjencent)
 {
     if (r + 1 != R)
     {
@@ -99,7 +106,7 @@ void extra_edges(vector<Vertex> &data)
     }
 }
 
-void print_vertex(int number, vector<Vertex> &vertices)
+void print_vertex(const int number, const vector<list<Distance>> &adjency_list, const vector<Vertex> &vertices)
 {
     int idx = number - 1;
     auto &v = vertices[idx];
@@ -107,9 +114,11 @@ void print_vertex(int number, vector<Vertex> &vertices)
     cout << " distance: " << v.distance_to_nzp_vertex;
     cout << " potential: " << v.potential;
     cout << " nzpv: " << v.nearest_nzp_vertex_idx + 1 << "\n";
-    for (auto &adj : v.adjencent)
+    cout << "Adjent:\n";
+
+    for (auto &adj : adjency_list[idx])
     {
-        cout << adj + 1 << "\n";
+        cout << "idx: " << adj.neighbor_idx + 1 << " weight: " << adj.weight << "\n";
     }
 }
 
@@ -126,7 +135,7 @@ void change_potential(Vertex &to, Vertex &from, queue<int> &q)
     q.emplace(to.id);
 }
 
-void explore_vertex(int idx, queue<int> &q, vector<Vertex> &data)
+void explore_vertex(const int idx, queue<int> &q, vector<Vertex> &data)
 {
     auto &v = data[idx];
     for (int adj_idx : v.adjencent)
@@ -147,7 +156,7 @@ void explore_vertex(int idx, queue<int> &q, vector<Vertex> &data)
     }
 }
 
-void set_nzpv(vector<int> &nzps, vector<Vertex> &data)
+void set_nzpv(const vector<int> &nzps, vector<Vertex> &data)
 {
     queue<int> q;
     for (int nzp_idx : nzps)
@@ -163,18 +172,43 @@ void set_nzpv(vector<int> &nzps, vector<Vertex> &data)
     }
 }
 
+vector<list<Distance>> create_weighted_edges(const vector<Vertex> &data)
+{
+    int size = R * C;
+    vector<list<Distance>> adjency_list(size);
+
+    for (int i = 0; i < size; i++)
+    {
+        auto &u = data[i];
+        auto &neighborhood = adjency_list[i];
+
+        for (auto &v_idx : u.adjencent)
+        {
+            auto &v = data[v_idx];
+            Distance d;
+            d.neighbor_idx = v_idx;
+
+            d.weight = u.distance_to_nzp_vertex + v.distance_to_nzp_vertex;
+            d.weight += abs(data[u.nearest_nzp_vertex_idx].potential - data[v.nearest_nzp_vertex_idx].potential);
+            neighborhood.push_back(d);
+        }
+    }
+
+    return adjency_list;
+}
+
 int run()
 {
     fscanf(stdin, "%d %d %d %d", &R, &C, &P, &K);
 
     vector<Vertex> vertices(R * C);
     fill_mesh(vertices);
-    vector<int> nzps = nzp_vertices(vertices);
+    const auto &nzps = nzp_vertices(vertices);
     extra_edges(vertices);
 
     set_nzpv(nzps, vertices);
-
-    print_vertex(5, vertices);
+    const auto &edges = create_weighted_edges(vertices);
+    print_vertex(2, edges, vertices);
     return 0;
 }
 
