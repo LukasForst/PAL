@@ -13,6 +13,7 @@ zip:
 	zip hw_forst.zip *.cpp
 
 clean:
+	rm -f *.out
 	rm -f *.o
 	rm -f main
 	rm -f *.zip

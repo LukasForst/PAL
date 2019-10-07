@@ -1,0 +1,1 @@
+vector<list<pair<souřadnice souseda, cena>>>
