@@ -199,7 +199,7 @@ void create_weighted_edges(list<Edge> &edges, const vector<Vertex> &data)
     }
 }
 
-int track(const vector<Edge> &edges)
+int track(const list<Edge> &edges)
 {
     auto w = 0;
     for (const auto &e : edges)
@@ -255,22 +255,25 @@ int kruskal(const vector<Edge> &edges)
 {
     const auto final_edges_count = V - 1;
 
-    vector<Edge> result(final_edges_count);
-
+    list<Edge> final_tree;
     auto subs = init_subsets();
-    for(auto i = 0, e = 0; e < final_edges_count; i++) 
+    for (const auto &e : edges)
     {
-        const auto &next_edge = edges[i];
-
-        const auto x = find_step(subs, next_edge.src);
-        const auto y = find_step(subs, next_edge.dest);
-        if(x == y) continue;
+        const auto u_component = find_step(subs, e.src);
+        const auto v_component = find_step(subs, e.dest);
         
-        result[e++] = next_edge;
-        union_step(subs, x, y);
+        if (u_component == v_component)
+            continue;
+
+        final_tree.push_back(e);
+
+        if ((int) final_tree.size() == final_edges_count)
+            break;
+        
+        union_step(subs, u_component, v_component);
     }
 
-    return track(result);
+    return track(final_tree);
 }
 
 int main()
