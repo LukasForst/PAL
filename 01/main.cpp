@@ -4,6 +4,7 @@
 #include <map>
 #include <queue>
 #include <cstdlib>
+#include <set>
 
 using namespace std;
 
@@ -172,29 +173,40 @@ void set_nzpv(const vector<int> &nzps, vector<Vertex> &data)
     }
 }
 
-vector<list<Distance>> create_weighted_edges(const vector<Vertex> &data)
+struct Edge {
+    int src, dest, weight;
+};
+
+void create_weighted_edges(list<Edge> &edges, const vector<Vertex> &data)
 {
     int size = R * C;
-    vector<list<Distance>> adjency_list(size);
 
-    for (int i = 0; i < size; i++)
+    auto cmp = [](const pair<int, int> &a, const pair<int, int> &b) 
+    { 
+        if(a.first == b.first) return a.second < b.second;
+        else return a.first < b.first;
+    };
+
+    set<pair<int, int>, decltype(cmp)> inserted(cmp);
+
+    for (int u_idx = 0; u_idx < size; u_idx++)
     {
-        auto &u = data[i];
-        auto &neighborhood = adjency_list[i];
-
+        auto &u = data[u_idx];
         for (auto &v_idx : u.adjencent)
         {
-            auto &v = data[v_idx];
-            Distance d;
-            d.neighbor_idx = v_idx;
+            pair<int, int> p { min(u_idx, v_idx), max(u_idx, v_idx) };
+            if(!inserted.insert(p).second) 
+            {
+                continue;
+            }
 
-            d.weight = u.distance_to_nzp_vertex + v.distance_to_nzp_vertex;
-            d.weight += abs(data[u.nearest_nzp_vertex_idx].potential - data[v.nearest_nzp_vertex_idx].potential);
-            neighborhood.push_back(d);
+            auto &v = data[v_idx];
+            Edge e { u_idx, v_idx, 0 };
+            e.weight = u.distance_to_nzp_vertex + v.distance_to_nzp_vertex;
+            e.weight += abs(data[u.nearest_nzp_vertex_idx].potential - data[v.nearest_nzp_vertex_idx].potential);
+            edges.push_back(e);
         }
     }
-
-    return adjency_list;
 }
 
 int run()
@@ -207,8 +219,21 @@ int run()
     extra_edges(vertices);
 
     set_nzpv(nzps, vertices);
-    const auto &edges = create_weighted_edges(vertices);
-    print_vertex(2, edges, vertices);
+    list<Edge> edges;
+    create_weighted_edges(edges, vertices);
+
+    // for(const auto &e : edges) {
+    //     cout << e.src + 1 << ":" << e.dest + 1 << " - " << e.weight << "\n";
+    // }
+    cout << "sorted:\n";
+    edges.sort([](const Edge &e1, const Edge &e2){ return e1.weight <= e2.weight; });
+
+
+    // for(const auto &e : edges) {
+    //     cout << e.src + 1 << ":" << e.dest + 1 << " - " << e.weight << "\n";
+    // }
+
+
     return 0;
 }
 
