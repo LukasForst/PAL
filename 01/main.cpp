@@ -210,7 +210,6 @@ void create_weighted_edges(list<Edge> &edges, const vector<Vertex> &data)
     }
 }
 
-// A structure to represent a subset for union-find  
 class subset  
 {  
     public: 
@@ -253,16 +252,16 @@ void Union(subset subsets[], int x, int y)
     }  
 }  
   
-// The main function to construct MST using Kruskal's algorithm  
-void KruskalMST(const list<Edge> &edges_data)  
+
+int kruskal(const list<Edge> &edges_data)  
 {  
     vector<Edge> edges(edges_data.begin(), edges_data.end());
-
-    int E = edges.size;
-    int V = R*C;
+    
+    auto E = (int) edges_data.size();
+    auto V = R*C;
     Edge result[V]; // Tnis will store the resultant MST  
-    int e = 0; // An index variable, used for result[]  
-    int i = 0; // An index variable, used for sorted edges  
+    auto e = 0; // An index variable, used for result[]  
+    auto i = 0; // An index variable, used for sorted edges  
 
     // Allocate memory for creating V ssubsets  
     subset *subsets = new subset[( V * sizeof(subset) )];  
@@ -295,16 +294,17 @@ void KruskalMST(const list<Edge> &edges_data)
         // Else discard the next_edge  
     }  
   
-    // print the contents of result[] to display the  
-    // built MST  
-    cout<<"Following are the edges in the constructed MST\n";  
-    for (i = 0; i < e; ++i)  
-        cout<<result[i].src<<" -- "<<result[i].dest<<" == "<<result[i].weight<<endl;  
-    return;  
+    int w = 0;
+    for (const auto &e : result)
+    {
+        w += e.weight;
+    }
+
+    return w;
 }  
 
 
-int run()
+int main()
 {
     fscanf(stdin, "%d %d %d %d", &R, &C, &P, &K);
 
@@ -317,23 +317,8 @@ int run()
     list<Edge> edges;
     create_weighted_edges(edges, vertices);
 
-    // for(const auto &e : edges) {
-    //     cout << e.src + 1 << ":" << e.dest + 1 << " - " << e.weight << "\n";
-    // }
-    cout << "sorted:\n";
     edges.sort([](const Edge &e1, const Edge &e2){ return e1.weight <= e2.weight; });
 
-    KruskalMST(edges);
-
-    // for(const auto &e : edges) {
-    //     cout << e.src + 1 << ":" << e.dest + 1 << " - " << e.weight << "\n";
-    // }
-
-
+    cout << kruskal(edges) << "\n";
     return 0;
-}
-
-int main()
-{
-    return run();
 }
