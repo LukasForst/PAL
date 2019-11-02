@@ -23,77 +23,6 @@ struct Node {
 int N, M;
 
 vector<Node> adjacency_list;
-vector<Node> reversed_adjacency_list;
-
-
-string join_list(list<int> &ids) {
-    string result;
-    for (int i : ids) {
-        result += "," + to_string(i);
-    }
-    return result;
-}
-
-void print(vector<Node> &nodes) {
-    cout << "Idx - Component - price " << endl;
-    for (auto i = 0; i < nodes.size(); i++) {
-        auto &n = nodes[i];
-
-        cout << i << " - " << n.component << " - " << n.price << " ---- " << join_list(n.adjacent) << "\n" << endl;
-    }
-}
-
-bool srt(const Node &n1, const Node &n2) {
-    return n1.component < n2.component;
-}
-
-void print_components(vector<Node> nodes){
-    sort(nodes.begin(), nodes.end(), srt);
-    int previous = -2;
-    for (auto &n : nodes) {
-        if(previous == n.component) continue;
-        previous = n.component;
-
-        list<int> same;
-        for(auto &n2 : nodes) {
-            if(n2.component == previous) {
-                same.push_back(n2.idx);
-            }
-        }
-
-        cout << n.component << " - " << join_list(same) << "\n";
-    }
-}
-
-
-void dfs_walk(int current, vector<bool> &explored, stack<int> &visited_stack) {
-    explored[current] = true;
-
-    for (const auto &adjacent : adjacency_list[current].adjacent) {
-        if (!explored[adjacent]) {
-            dfs_walk(adjacent, explored, visited_stack);
-        }
-    }
-
-    visited_stack.push(current);
-}
-
-void reverse_dfs_walk(int current, vector<bool> &explored, list<int> &component) {
-    explored[current] = true;
-    component.push_back(current);
-
-    for (const auto &adjacent : reversed_adjacency_list[current].adjacent) {
-        if (!explored[adjacent]) {
-            reverse_dfs_walk(adjacent, explored, component);
-        }
-    }
-}
-
-void clean_boolean_vector(vector<bool> &d) {
-    for (auto &&i : d) {
-        i = false;
-    }
-}
 
 void remove_inner_component_edges(vector<Node> &nodes, list<int> &nodes_with_edges) {
     for (auto i = 0; i < nodes.size(); i++) {
@@ -144,41 +73,10 @@ express_path path_find(int idx, int depth, int price) {
     return best_node;
 }
 
-void create_components() {
-    stack<int> stack;
-    vector<bool> explored(N);
-
-    clean_boolean_vector(explored);
-    dfs_walk(0, explored, stack);
-    clean_boolean_vector(explored);
-
-    int current_component = 0;
-    while (!stack.empty()) {
-        auto &current_node = stack.top();
-        stack.pop();
-
-        if (explored[current_node]) continue;
-
-        list<int> component {};
-        reverse_dfs_walk(current_node, explored,component);
-
-        const auto size = component.size();
-        for (auto &node_idx : component) {
-            adjacency_list[node_idx].price = size;
-            adjacency_list[node_idx].component = current_component;
-        }
-
-        current_component++;
-    }
-}
-
 express_path find_path() {
     list<int> non_empty_nodes;
     remove_inner_component_edges(adjacency_list, non_empty_nodes);
 
-
-//    print_components(adjacency_list);
-//    print(adjacency_list);
 
     express_path result{0, 0};
     for (int i = 0; i < adjacency_list.size(); i++) {
@@ -196,13 +94,6 @@ express_path find_path() {
     }
 
     return result;
-}
-
-void kosaraju() {
-    create_components();
-    auto result = find_path();
-    cout << result.price << " " << result.lenght << endl;
-
 }
 
 // A recursive function that finds and prints strongly connected
@@ -306,7 +197,6 @@ void dfs()
 int main() {
     fscanf(stdin, "%d %d", &N, &M);
     adjacency_list = vector<Node>(N);
-    reversed_adjacency_list = vector<Node>(N);
 
     for (auto i = 0; i < M; i++) {
         if(i < N) {
@@ -317,7 +207,6 @@ int main() {
         fscanf(stdin, "%d %d", &from, &to);
 
         adjacency_list[from].adjacent.push_back(to);
-        reversed_adjacency_list[to].adjacent.push_back(from);
     }
 
     dfs();
