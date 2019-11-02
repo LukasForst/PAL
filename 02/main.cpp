@@ -144,7 +144,7 @@ express_path path_find(int idx, int depth, int price) {
     return best_node;
 }
 
-express_path run() {
+void create_components() {
     stack<int> stack;
     vector<bool> explored(N);
 
@@ -170,12 +170,14 @@ express_path run() {
 
         current_component++;
     }
+}
 
+express_path find_path() {
     list<int> non_empty_nodes;
     remove_inner_component_edges(adjacency_list, non_empty_nodes);
 
 
-    print_components(adjacency_list);
+//    print_components(adjacency_list);
 //    print(adjacency_list);
 
     express_path result{0, 0};
@@ -196,6 +198,111 @@ express_path run() {
     return result;
 }
 
+void kosaraju() {
+    create_components();
+    auto result = find_path();
+    cout << result.price << " " << result.lenght << endl;
+
+}
+
+// A recursive function that finds and prints strongly connected
+// components using DFS traversal
+// u --> The vertex to be visited next
+// disc[] --> Stores discovery times of visited vertices
+// low[] -- >> earliest visited vertex (the vertex with minimum
+//             discovery time) that can be reached from subtree
+//             rooted with current vertex
+// *st -- >> To store all the connected ancestors (could be part
+//           of SCC)
+// stackMember[] --> bit/index array for faster check whether
+//                  a node is in stack
+void ssc(int u, int disc[], int low[], stack<int> *st,
+                    bool stackMember[])
+{
+    // A static variable is used for simplicity, we can avoid use
+    // of static variable by passing a pointer.
+    static int time = 0;
+
+    // Initialize discovery time and low value
+    disc[u] = low[u] = ++time;
+    st->push(u);
+    stackMember[u] = true;
+
+    // Go through all vertices adjacent to this
+    list<int>::iterator i;
+    for (i = adjacency_list[u].adjacent.begin(); i != adjacency_list[u].adjacent.end(); ++i)
+    {
+        int v = *i;  // v is current adjacent of 'u'
+
+        // If v is not visited yet, then recur for it
+        if (disc[v] == -1)
+        {
+            ssc(v, disc, low, st, stackMember);
+
+            // Check if the subtree rooted with 'v' has a
+            // connection to one of the ancestors of 'u'
+            // Case 1 (per above discussion on Disc and Low value)
+            low[u]  = min(low[u], low[v]);
+        }
+
+            // Update low value of 'u' only of 'v' is still in stack
+            // (i.e. it's a back edge, not cross edge).
+            // Case 2 (per above discussion on Disc and Low value)
+        else if (stackMember[v])
+            low[u]  = min(low[u], disc[v]);
+    }
+
+    static int component_no = 0;
+    // head node found, pop the stack and print an SCC
+    int w = 0;  // To store stack extracted vertices
+    if (low[u] == disc[u])
+    {
+        list<int> components;
+        while (st->top() != u)
+        {
+            w = (int) st->top();
+            components.push_back(w);
+            stackMember[w] = false;
+            st->pop();
+        }
+        w = (int) st->top();
+        components.push_back(w);
+        stackMember[w] = false;
+
+        auto size = components.size();
+        for(auto i: components) {
+            adjacency_list[i].price = size;
+            adjacency_list[i].component = component_no;
+        }
+        component_no++;
+
+        st->pop();
+    }
+}
+
+// The function to do DFS traversal. It uses SCCUtil()
+void dfs()
+{
+    int *disc = new int[N];
+    int *low = new int[N];
+    bool *stackMember = new bool[N];
+    auto *st = new stack<int>();
+
+    // Initialize disc and low, and stackMember arrays
+    for (int i = 0; i < N; i++)
+    {
+        disc[i] = -1;
+        low[i] = INT32_MAX;
+        stackMember[i] = false;
+    }
+
+    // Call the recursive helper function to find strongly
+    // connected components in DFS tree with vertex 'i'
+    for (int i = 0; i < N; i++)
+        if (disc[i] == -1)
+            ssc(i, disc, low, st, stackMember);
+}
+
 int main() {
     fscanf(stdin, "%d %d", &N, &M);
     adjacency_list = vector<Node>(N);
@@ -213,7 +320,9 @@ int main() {
         reversed_adjacency_list[to].adjacent.push_back(from);
     }
 
-    auto result = run();
+    dfs();
+    auto result = find_path();
     cout << result.price << " " << result.lenght << endl;
+
     return 0;
 }
