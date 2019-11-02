@@ -18,6 +18,9 @@ struct Node {
     int component = -1;
     int price = 1;
     int idx;
+    bool on_stack = false;
+    int disc = -1;
+    int lowlink = INT32_MAX;
 };
 
 int N, M;
@@ -81,7 +84,7 @@ express_path find_path() {
     express_path result{0, 0};
     for (int i = 0; i < adjacency_list.size(); i++) {
 
-        if(adjacency_list[i].adjacent.empty()) continue;
+        if (adjacency_list[i].adjacent.empty()) continue;
 
         auto child_result = path_find(i, 0, 0);
 
@@ -96,6 +99,39 @@ express_path find_path() {
     return result;
 }
 
+stack<int> traversal_stack;
+
+void push(int i) {
+    adjacency_list[i].on_stack = true;
+    traversal_stack.push(i);
+}
+
+void pop(int i) {
+    adjacency_list[i].on_stack = false;
+    traversal_stack.pop();
+}
+
+int top() {
+    return traversal_stack.top();
+}
+
+int take() {
+    int i = top();
+    pop(i);
+    return i;
+}
+
+int idx_counter = 0;
+
+int generate_idx() {
+    return idx_counter++;
+}
+
+int component_counter = 0;
+int generate_component_number() {
+    return component_counter++;
+}
+
 // A recursive function that finds and prints strongly connected
 // components using DFS traversal
 // u --> The vertex to be visited next
@@ -107,91 +143,56 @@ express_path find_path() {
 //           of SCC)
 // stackMember[] --> bit/index array for faster check whether
 //                  a node is in stack
-void ssc(int u, int disc[], int low[], stack<int> *st,
-                    bool stackMember[])
-{
-    // A static variable is used for simplicity, we can avoid use
-    // of static variable by passing a pointer.
-    static int time = 0;
+void ssc(int u, int disc[], int low[]) {
 
-    // Initialize discovery time and low value
-    disc[u] = low[u] = ++time;
-    st->push(u);
-    stackMember[u] = true;
+    disc[u] = low[u] = generate_idx();
+    push(u);
 
     // Go through all vertices adjacent to this
-    list<int>::iterator i;
-    for (i = adjacency_list[u].adjacent.begin(); i != adjacency_list[u].adjacent.end(); ++i)
-    {
-        int v = *i;  // v is current adjacent of 'u'
+    for (auto &v: adjacency_list[u].adjacent) {
 
-        // If v is not visited yet, then recur for it
-        if (disc[v] == -1)
-        {
-            ssc(v, disc, low, st, stackMember);
+        if (disc[v] == -1) {
+            ssc(v, disc, low);
 
-            // Check if the subtree rooted with 'v' has a
-            // connection to one of the ancestors of 'u'
-            // Case 1 (per above discussion on Disc and Low value)
-            low[u]  = min(low[u], low[v]);
+            low[u] = min(low[u], low[v]);
+        } else if (adjacency_list[v].on_stack) {
+            low[u] = min(low[u], disc[v]);
+
         }
-
-            // Update low value of 'u' only of 'v' is still in stack
-            // (i.e. it's a back edge, not cross edge).
-            // Case 2 (per above discussion on Disc and Low value)
-        else if (stackMember[v])
-            low[u]  = min(low[u], disc[v]);
     }
 
-    static int component_no = 0;
-    // head node found, pop the stack and print an SCC
     int w = 0;  // To store stack extracted vertices
-    if (low[u] == disc[u])
-    {
+    if (low[u] == disc[u]) {
         list<int> components;
-        while (st->top() != u)
-        {
-            w = (int) st->top();
+
+        while (top() != u) {
+            w = take();
             components.push_back(w);
-            stackMember[w] = false;
-            st->pop();
         }
-        w = (int) st->top();
-        components.push_back(w);
-        stackMember[w] = false;
+
+        components.push_back(take());
 
         auto size = components.size();
-        for(auto i: components) {
+        auto component_no = generate_component_number();
+        for (const auto &i: components) {
             adjacency_list[i].price = size;
             adjacency_list[i].component = component_no;
         }
-        component_no++;
-
-        st->pop();
     }
 }
 
-// The function to do DFS traversal. It uses SCCUtil()
-void dfs()
-{
+void tarjan() {
     int *disc = new int[N];
     int *low = new int[N];
-    bool *stackMember = new bool[N];
-    auto *st = new stack<int>();
 
-    // Initialize disc and low, and stackMember arrays
-    for (int i = 0; i < N; i++)
-    {
+    for (int i = 0; i < N; i++) {
         disc[i] = -1;
         low[i] = INT32_MAX;
-        stackMember[i] = false;
     }
 
-    // Call the recursive helper function to find strongly
-    // connected components in DFS tree with vertex 'i'
     for (int i = 0; i < N; i++)
         if (disc[i] == -1)
-            ssc(i, disc, low, st, stackMember);
+            ssc(i, disc, low);
 }
 
 int main() {
@@ -199,7 +200,7 @@ int main() {
     adjacency_list = vector<Node>(N);
 
     for (auto i = 0; i < M; i++) {
-        if(i < N) {
+        if (i < N) {
             adjacency_list[i].idx = i;
         }
 
@@ -209,7 +210,7 @@ int main() {
         adjacency_list[from].adjacent.push_back(to);
     }
 
-    dfs();
+    tarjan();
     auto result = find_path();
     cout << result.price << " " << result.lenght << endl;
 
