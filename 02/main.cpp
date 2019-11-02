@@ -128,71 +128,67 @@ int generate_idx() {
 }
 
 int component_counter = 0;
+
 int generate_component_number() {
     return component_counter++;
 }
 
-// A recursive function that finds and prints strongly connected
-// components using DFS traversal
-// u --> The vertex to be visited next
-// disc[] --> Stores discovery times of visited vertices
-// low[] -- >> earliest visited vertex (the vertex with minimum
-//             discovery time) that can be reached from subtree
-//             rooted with current vertex
-// *st -- >> To store all the connected ancestors (could be part
-//           of SCC)
-// stackMember[] --> bit/index array for faster check whether
-//                  a node is in stack
-void ssc(int u, int disc[], int low[]) {
+void init_search_round(int v) {
+    auto &V = adjacency_list[v];
+    auto idx = generate_idx();
+    V.lowlink = idx;
+    V.disc = idx;
+    push(v);
+}
 
-    disc[u] = low[u] = generate_idx();
-    push(u);
 
-    // Go through all vertices adjacent to this
+void component_found(int u) {
+    list<int> components;
+
+    while (top() != u) {
+        components.push_back(take());
+    }
+
+    components.push_back(take());
+
+    auto size = components.size();
+    auto component_no = generate_component_number();
+    for (const auto &i: components) {
+        adjacency_list[i].price = size;
+        adjacency_list[i].component = component_no;
+    }
+
+}
+
+void ssc(int u) {
+
+    init_search_round(u);
+    auto &U = adjacency_list[u];
+
     for (auto &v: adjacency_list[u].adjacent) {
+        auto &V = adjacency_list[v];
 
-        if (disc[v] == -1) {
-            ssc(v, disc, low);
-
-            low[u] = min(low[u], low[v]);
-        } else if (adjacency_list[v].on_stack) {
-            low[u] = min(low[u], disc[v]);
-
+        if (V.disc == -1) {
+            ssc(v);
+            U.lowlink = min(U.lowlink, V.lowlink);
+        } else if (V.on_stack) {
+            U.lowlink = min(U.lowlink, V.disc);
         }
     }
 
-    int w = 0;  // To store stack extracted vertices
-    if (low[u] == disc[u]) {
-        list<int> components;
-
-        while (top() != u) {
-            w = take();
-            components.push_back(w);
-        }
-
-        components.push_back(take());
-
-        auto size = components.size();
-        auto component_no = generate_component_number();
-        for (const auto &i: components) {
-            adjacency_list[i].price = size;
-            adjacency_list[i].component = component_no;
-        }
+    if (U.lowlink == U.disc) {
+        component_found(u);
     }
 }
 
 void tarjan() {
-    int *disc = new int[N];
-    int *low = new int[N];
-
     for (int i = 0; i < N; i++) {
-        disc[i] = -1;
-        low[i] = INT32_MAX;
+        if (adjacency_list[i].disc != -1) {
+            continue;
+        }
+        ssc(i);
     }
 
-    for (int i = 0; i < N; i++)
-        if (disc[i] == -1)
-            ssc(i, disc, low);
 }
 
 int main() {
@@ -202,6 +198,8 @@ int main() {
     for (auto i = 0; i < M; i++) {
         if (i < N) {
             adjacency_list[i].idx = i;
+            adjacency_list[i].disc = -1;
+            adjacency_list[i].lowlink = INT32_MAX;
         }
 
         int from, to;
