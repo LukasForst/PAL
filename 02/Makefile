@@ -9,6 +9,9 @@ program: $(objects)
 	g++ -o program $(objects)
 #	${CC} ${CFLAGS} -o program $(objects)
 
+run: program
+	cat data/pub${N}.in | ./program && cat data/pub${N}.out
+
 zip:
 	@if [ -f "`which zip`" ]; then \
 	 zip -R hw.zip *.cpp *.h; \
@@ -81,6 +84,6 @@ help:
 	@echo "         clean   - clean binary"
 	@echo "         program - build"
 	@echo "         zip     - archive all .cpp and .h files"
-	@echo "         all     - clean - program - test - zip"
+	@echo "         all     - clean_boolean_vector - program - test - zip"
 
 FORCE:
