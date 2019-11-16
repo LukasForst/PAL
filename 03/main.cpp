@@ -26,8 +26,8 @@ enum ColoringState {
 };
 
 struct Node {
-    string certificate = "C";
-    bool in_cycle = false;
+    string certificate = "L";
+    int cycle_id = -1;
     ColoringState color = NEW;
     list<int> adjacent;
 };
@@ -38,28 +38,31 @@ struct Graph {
     string certificate = "";
 };
 
-void dfs_cycle(int u, int p, vector<int> &color, vector<int> &par, vector<Node> &nodes) {
+void dfs_cycle(int u, int p, vector<int> &color, vector<int> &par, vector<Node> &nodes, int &cycle_counter) {
     auto &current = nodes[u];
 
-    if (current.color == PARTIALLY_VISITED) {
-        int cur = p;
-        nodes[cur].in_cycle = true;
-
-        while (cur != u) {
-            cur = par[cur];
-            nodes[cur].in_cycle = true;
-        }
-    } else if (current.color == NEW) {
+    if (current.color == NEW) {
         par[u] = p;
         current.color = PARTIALLY_VISITED;
 
         for (auto &v : current.adjacent) {
             if (v != par[u]) {
-                dfs_cycle(v, u, color, par, nodes);
+                dfs_cycle(v, u, color, par, nodes, cycle_counter);
             }
         }
 
         current.color = COMPLETELY_VISITED;
+    } else if (current.color == PARTIALLY_VISITED) {
+        int cur = p;
+        cycle_counter++;
+
+        nodes[cur].cycle_id = cycle_counter;
+
+        while (cur != u) {
+            cur = par[cur];
+            nodes[cur].cycle_id = cycle_counter;
+            nodes[cur].certificate = "C";
+        }
     }
 }
 
@@ -72,8 +75,8 @@ void reset_state(Graph &g) {
 void print_cycles(Graph &g) {
     cout << "Nodes in cycle: ";
     for (auto i = 0; i < N; i++) {
-        if (g.nodes[i].in_cycle) {
-            cout << i + 1 << ", ";
+        if (g.nodes[i].cycle_id != -1) {
+            cout << i + 1 << " (" << g.nodes[i].cycle_id << "),";
         }
     }
     cout << endl;
@@ -82,12 +85,13 @@ void print_cycles(Graph &g) {
 void find_cycles(Graph &g) {
     vector<int> color(N);
     vector<int> parents(N);
-    dfs_cycle(0, -1, color, parents, g.nodes);
+    int cycle_counter = 0;
+    dfs_cycle(0, -1, color, parents, g.nodes, cycle_counter);
 }
 
 void find_root(Graph &g) {
     for (auto i = 0; i < N; i++) {
-        if (!g.nodes[i].in_cycle && g.nodes[i].adjacent.size() == 3) {
+        if (g.nodes[i].cycle_id == -1 && g.nodes[i].adjacent.size() == 3) {
             g.root = i;
             break;
         }
