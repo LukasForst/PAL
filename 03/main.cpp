@@ -10,6 +10,7 @@
 #include <iostream>
 #include <queue>
 #include <algorithm>
+#include <set>
 
 using namespace std;
 
@@ -34,8 +35,6 @@ struct Graph {
     int root;
     string certificate;
 };
-
-vector<Graph> graphs;
 
 void dfs_cycle(int u, int p, vector<int> &color, vector<int> &par, vector<Node> &nodes) {
     auto &current = nodes[u];
@@ -69,7 +68,7 @@ void reset_state(Graph &g) {
 
 void print_cycles(Graph &g) {
     cout << "Nodes in cycle: ";
-    for (int i = 0; i < N; i++) {
+    for (auto i = 0; i < N; i++) {
         if (g.nodes[i].in_cycle) {
             cout << i << ", ";
         }
@@ -113,10 +112,35 @@ void find_graph_certificate(Graph &g) {
     g.certificate = certificates[0] + "A" + certificates[1] + "B" + certificates[2];
 }
 
+void print_result(vector<Graph> &graphs, set<string> &certificates) {
+    auto size = certificates.size();
+
+    vector<int> counts(size);
+    int idx = 0;
+    for (auto &c : certificates) {
+        int count = 0;
+        for (auto &g: graphs) {
+            if (g.certificate == c) {
+                count++;
+            }
+        }
+        counts[idx++] = count;
+    }
+
+    for (auto i = 0; i < size; i++) {
+        cout << counts[i];
+        if (i != size - 1) {
+            cout << " ";
+        }
+    }
+    cout << endl;
+}
+
 
 int main() {
     fscanf(stdin, "%d %d %d", &T, &N, &M);
-    graphs = vector<Graph>(T);
+    vector<Graph> graphs(T);
+    set<string> certificates;
 
     for (auto &g : graphs) {
         g.nodes = vector<Node>(N);
@@ -138,9 +162,11 @@ int main() {
 
         reset_state(g);
 
+        find_graph_certificate(g);
+        certificates.insert(g.certificate);
     }
 
-
+    print_result(graphs, certificates);
     return 0;
 
 }
