@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <set>
 
-#define DEBUG 1
+#define DEBUG 0
 
 using namespace std;
 
@@ -57,6 +57,7 @@ void dfs_cycle(int u, int p, vector<int> &par, vector<Node> &nodes, int &cycle_c
         cycle_counter++;
 
         nodes[cur].cycle_id = cycle_counter;
+        nodes[cur].certificate = "C";
 
         while (cur != u) {
             cur = par[cur];
@@ -97,35 +98,42 @@ void find_root(Graph &g) {
     }
 }
 
+string find_node_certificate(int p, int c, vector<Node> &nodes);
+
+string shrink_node(int p, int c, int original_parent, vector<Node> &nodes) {
+    auto &current = nodes[c];
+
+    string same_circle_cert;
+    for (auto adj: current.adjacent) {
+        auto &next = nodes[adj];
+        if (adj == p || adj == original_parent) continue;
+
+        if (next.cycle_id == current.cycle_id) {
+            same_circle_cert = shrink_node(c, adj, original_parent, nodes);
+        } else if (current.certificate == "C") {
+            current.certificate = current.certificate + "{" + find_node_certificate(c, adj, nodes) + "}";
+        }
+    }
+
+    return current.certificate + same_circle_cert;
+}
+
 string find_node_certificate(int p, int c, vector<Node> &nodes) {
     auto &parent = nodes[p];
     auto &current = nodes[c];
 
     if (current.adjacent.size() == 1) {
         return current.certificate;
-    } else if (current.color == PARTIALLY_VISITED) {
-        return "";
     }
 
-    current.color = PARTIALLY_VISITED;
-
-    // different cycle only
+    list<string> child_certificates;
     for (auto adj: current.adjacent) {
-        auto &next = nodes[adj];
-        if (adj == p || next.cycle_id == current.cycle_id) continue;
-        current.certificate = current.certificate + "{" + find_node_certificate(c, adj, nodes) + "}";
+        if (adj == p) continue;
+        child_certificates.push_back(shrink_node(c, adj, c, nodes));
     }
+    child_certificates.sort();
 
-    // same cycle only
-    for (auto adj: current.adjacent) {
-        auto &next = nodes[adj];
-        if (adj == p || next.cycle_id != current.cycle_id) continue;
-
-        current.certificate += find_node_certificate(c, adj, nodes);
-    }
-
-    current.color = COMPLETELY_VISITED;
-    return current.certificate;
+    return current.certificate + child_certificates.front();
 }
 
 void find_graph_certificate(Graph &g) {
@@ -156,6 +164,7 @@ void print_result(vector<Graph> &graphs, set<string> &certificates) {
         counts[idx++] = count;
     }
 
+    sort(counts.begin(), counts.end());
     for (auto i = 0; i < size; i++) {
         cout << counts[i];
         if (i != size - 1) {
@@ -165,6 +174,9 @@ void print_result(vector<Graph> &graphs, set<string> &certificates) {
     cout << endl;
 }
 
+void print_graph_certificate(Graph &g) {
+    cout << g.certificate << endl;
+}
 
 int main() {
     fscanf(stdin, "%d %d %d", &T, &N, &M);
@@ -187,14 +199,15 @@ int main() {
         find_cycles(g);
         find_root(g);
 
+        reset_state(g);
+        find_graph_certificate(g);
+
         if (DEBUG) {
             print_cycles(g);
             cout << "Root: " << g.root + 1 << endl;
+            print_graph_certificate(g);
         }
 
-        reset_state(g);
-
-        find_graph_certificate(g);
         certificates.insert(g.certificate);
     }
 
