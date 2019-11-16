@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <set>
 
+#define DEBUG 1
+
 using namespace std;
 
 // T is the number of the input graphs
@@ -32,12 +34,13 @@ struct Node {
 
 struct Graph {
     vector<Node> nodes;
-    int root;
-    string certificate;
+    int root = -1;
+    string certificate = "";
 };
 
 void dfs_cycle(int u, int p, vector<int> &color, vector<int> &par, vector<Node> &nodes) {
     auto &current = nodes[u];
+
     if (current.color == PARTIALLY_VISITED) {
         int cur = p;
         nodes[cur].in_cycle = true;
@@ -46,7 +49,7 @@ void dfs_cycle(int u, int p, vector<int> &color, vector<int> &par, vector<Node> 
             cur = par[cur];
             nodes[cur].in_cycle = true;
         }
-    } else {
+    } else if (current.color == NEW) {
         par[u] = p;
         current.color = PARTIALLY_VISITED;
 
@@ -70,7 +73,7 @@ void print_cycles(Graph &g) {
     cout << "Nodes in cycle: ";
     for (auto i = 0; i < N; i++) {
         if (g.nodes[i].in_cycle) {
-            cout << i << ", ";
+            cout << i + 1 << ", ";
         }
     }
     cout << endl;
@@ -156,9 +159,12 @@ int main() {
         }
 
         find_cycles(g);
-        print_cycles(g);
         find_root(g);
-        cout << "Root: " << g.root << endl;
+
+        if (DEBUG) {
+            print_cycles(g);
+            cout << "Root: " << g.root + 1 << endl;
+        }
 
         reset_state(g);
 
@@ -168,5 +174,4 @@ int main() {
 
     print_result(graphs, certificates);
     return 0;
-
 }
