@@ -38,7 +38,7 @@ struct Graph {
     string certificate = "";
 };
 
-void dfs_cycle(int u, int p, vector<int> &color, vector<int> &par, vector<Node> &nodes, int &cycle_counter) {
+void dfs_cycle(int u, int p, vector<int> &par, vector<Node> &nodes, int &cycle_counter) {
     auto &current = nodes[u];
 
     if (current.color == NEW) {
@@ -47,7 +47,7 @@ void dfs_cycle(int u, int p, vector<int> &color, vector<int> &par, vector<Node> 
 
         for (auto &v : current.adjacent) {
             if (v != par[u]) {
-                dfs_cycle(v, u, color, par, nodes, cycle_counter);
+                dfs_cycle(v, u, par, nodes, cycle_counter);
             }
         }
 
@@ -83,10 +83,9 @@ void print_cycles(Graph &g) {
 }
 
 void find_cycles(Graph &g) {
-    vector<int> color(N);
     vector<int> parents(N);
     int cycle_counter = 0;
-    dfs_cycle(0, -1, color, parents, g.nodes, cycle_counter);
+    dfs_cycle(0, -1, parents, g.nodes, cycle_counter);
 }
 
 void find_root(Graph &g) {
@@ -102,8 +101,31 @@ string find_node_certificate(int p, int c, vector<Node> &nodes) {
     auto &parent = nodes[p];
     auto &current = nodes[c];
 
+    if (current.adjacent.size() == 1) {
+        return current.certificate;
+    } else if (current.color == PARTIALLY_VISITED) {
+        return "";
+    }
 
-    return "";
+    current.color = PARTIALLY_VISITED;
+
+    // different cycle only
+    for (auto adj: current.adjacent) {
+        auto &next = nodes[adj];
+        if (adj == p || next.cycle_id == current.cycle_id) continue;
+        current.certificate = current.certificate + "{" + find_node_certificate(c, adj, nodes) + "}";
+    }
+
+    // same cycle only
+    for (auto adj: current.adjacent) {
+        auto &next = nodes[adj];
+        if (adj == p || next.cycle_id != current.cycle_id) continue;
+
+        current.certificate += find_node_certificate(c, adj, nodes);
+    }
+
+    current.color = COMPLETELY_VISITED;
+    return current.certificate;
 }
 
 void find_graph_certificate(Graph &g) {
