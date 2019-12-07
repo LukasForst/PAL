@@ -5,8 +5,7 @@
 #include <cfloat>
 #include <limits>
 
-#define DEBUG 1
-
+#define DEBUG 0
 using namespace std;
 
 int max_deletions;
@@ -16,14 +15,15 @@ string dna_sequence;
 struct Automata {
     string sequence;
     int length;
-    int price;
+    int cost;
 };
 
-vector<Automata> automatas(1);
+vector<Automata> automatas;
 
 struct Result {
     string maximal_sequence = "";
-    int price = 0;
+    int cost = 0;
+    int deletions = 0;
     double value = numeric_limits<double>::infinity() - 1;
 };
 
@@ -31,22 +31,20 @@ struct Result {
 Result use_automat(int idx, const Automata &automata) {
     Result r = Result();
 
-    int deletions = 0;
-
     for (const auto &c : automata.sequence) {
-        if (deletions > max_deletions) break;
+        if (r.deletions > max_deletions) break;
 
         if (c == dna_sequence[idx]) {
             idx++;
             r.maximal_sequence += c;
         } else {
-            deletions++;
+            r.deletions++;
         }
     }
-    r.price = automata.price + deletions;
+    r.cost = automata.cost + r.deletions;
 
     if (r.maximal_sequence.length() != 0) {
-        r.value = ((double) r.price) / ((double) r.maximal_sequence.length());
+        r.value = ((double) r.cost) / ((double) r.maximal_sequence.length());
     } else {
         r.value = numeric_limits<double>::infinity();
     }
@@ -73,7 +71,7 @@ void run() {
         }
 
         basis_unit_count++;
-        cost += best.price;
+        cost += best.cost;
         idx += best.maximal_sequence.length();
         if (DEBUG) {
             cout << best.maximal_sequence << endl;
@@ -93,10 +91,10 @@ int main() {
     automatas.resize(basis_unit_types);
 
     for (auto &base : automatas) {
-        cin >> base.price;
+        cin >> base.cost;
         cin >> base.sequence;
         base.length = base.sequence.length();
-        if (DEBUG) cout << "Seq: " << base.sequence << " - " << base.price << endl;
+        if (DEBUG) cout << "Seq: " << base.sequence << " - " << base.cost << endl;
     }
 
     run();
