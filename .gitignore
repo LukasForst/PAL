@@ -3,6 +3,7 @@ program
 main
 # Created by https://www.gitignore.io/api/c,c++,java,cmake,jetbrains+all,visualstudiocode
 # Edit at https://www.gitignore.io/?templates=c,c++,java,cmake,jetbrains+all,visualstudiocode
+data/
 
 ### C ###
 # Prerequisites
