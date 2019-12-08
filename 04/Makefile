@@ -20,7 +20,7 @@ zip:
 	 zip -R hw.zip *.cpp *.h; \
 	fi;
 
-test: FORCE
+test: FORCE program
 	@if ! [ -d "$TESTOUTPUT" ] ; then\
  mkdir -p ${TESTOUTPUT} ; \
  fi;
