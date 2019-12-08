@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cfloat>
 #include <limits>
+#include <set>
 
 #define DEBUG 0
 using namespace std;
@@ -51,6 +52,18 @@ Result use_automat(int idx, const Automata &automata) {
     return r;
 }
 
+struct NextIter {
+    int idx;
+    int cost;
+    int basis;
+    double value;
+    string str;
+
+    bool operator<(const NextIter &iter) const {
+        return value < iter.value;
+    }
+};
+
 int best_cost = numeric_limits<int>::max();
 int best_basis_units_count = 0;
 
@@ -65,6 +78,7 @@ void run(int idx, int cost, int basis_unit_count) {
         return;
     }
 
+    list<NextIter> iters;
     for (const auto &automata: automatas) {
         auto r = use_automat(idx, automata);
 
@@ -74,18 +88,32 @@ void run(int idx, int cost, int basis_unit_count) {
         int next_cost = cost + r.cost;
         int next_basis_count = basis_unit_count + 1;
 
-        run(next_idx, next_cost, next_basis_count);
+        iters.push_back(NextIter{next_idx, next_cost, next_basis_count, r.value, r.maximal_sequence});
 
-        auto deletions = r.deletions;
-        while (deletions < max_deletions) {
-            deletions++;
-            next_idx--;
-            next_cost++;
+//        auto deletions = r.deletions;
+//        while (deletions < max_deletions && next_idx != idx) {
+//            deletions++;//        while (deletions < max_deletions && next_idx != idx) {
+//            deletions++;
+//            next_idx--;
+//            next_cost++;
+//
+//            run(next_idx, next_cost, next_basis_count);
 
-            run(next_idx, next_cost, next_basis_count);
-        }
+//            next_idx--;
+//            next_cost++;
+//
+//            run(next_idx, next_cost, next_basis_count);
+//        }
     }
 
+    iters.sort();
+    set<string> visited;
+    for (auto &i : iters) {
+        if (visited.find(i.str) == visited.end()) {
+            visited.insert(i.str);
+            run(i.idx, i.cost, i.basis);
+        }
+    }
 }
 
 //void run() {
