@@ -32,12 +32,11 @@ Result use_automat(int idx, const Automata &automata) {
     Result r = Result();
 
     for (const auto &c : automata.sequence) {
-        if (r.deletions > max_deletions) break;
-
         if (c == dna_sequence[idx]) {
             idx++;
             r.maximal_sequence += c;
         } else {
+            if (r.deletions == max_deletions) break;
             r.deletions++;
         }
     }
