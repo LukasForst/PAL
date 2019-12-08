@@ -26,7 +26,6 @@ struct Result {
     int deletions = 0;
 };
 
-
 Result use_automat(int idx, const Automata &automata) {
     Result r = Result();
 
@@ -35,7 +34,9 @@ Result use_automat(int idx, const Automata &automata) {
             idx++;
             r.maximal_sequence += c;
         } else {
-            if (r.deletions >= max_deletions) break;
+            if (r.deletions == max_deletions) {
+                return Result();
+            }
             r.deletions++;
         }
     }
@@ -43,55 +44,75 @@ Result use_automat(int idx, const Automata &automata) {
     return r;
 }
 
-struct NextIter {
+struct Reach {
     int idx;
     int cost;
-    double value;
-    string str;
-
-    bool operator<(const NextIter &iter) const {
-        return value < iter.value;
-    }
 };
 
-int best_cost = numeric_limits<int>::max();
-int best_basis_units_count = 0;
+list<Reach> get_reachable_indicies(int idx, const Automata &dfa) {
+    list<Reach> indicies{};
+    auto r = use_automat(idx, dfa);
 
-void run(int idx, int cost, int basis_unit_count) {
-    if (cost > best_cost || (cost == best_cost && best_basis_units_count <= basis_unit_count)) {
-        return;
-    } else if (idx == dna_sequence.length()) {
-        if (cost < best_cost) {
-            best_cost = cost;
-            best_basis_units_count = basis_unit_count;
-        } else if (cost == best_cost && best_basis_units_count > basis_unit_count) {
-            best_basis_units_count = basis_unit_count;
+    if (r.maximal_sequence.empty()) return indicies;
+
+    indicies.push_back(Reach{idx + (int) r.maximal_sequence.length(), r.cost});
+
+    int deletions_performed = 1;
+    for (int i = r.deletions; i < max_deletions; i++) {
+        auto next_idx = idx + (int) r.maximal_sequence.length() - deletions_performed;
+        if (next_idx < 1) break;
+
+        indicies.push_back(Reach{next_idx, r.cost + deletions_performed});
+        deletions_performed++;
+    }
+
+    return indicies;
+}
+
+
+struct Index {
+    int cost = numeric_limits<int>::max();
+    int basis_count = numeric_limits<int>::max();
+};
+
+void run() {
+    vector<Index> indicies(dna_sequence.length() + 1);
+    indicies[0].cost = 0;
+    indicies[0].basis_count = 0;
+
+    for (int idx = 0; idx < (int) dna_sequence.length(); idx++) {
+        auto &idx_value = indicies[idx];
+
+        for (const auto &dfa : automatas) {
+            auto reach = get_reachable_indicies(idx, dfa);
+            for (auto &r : reach) {
+                auto &reachable_index = indicies[r.idx];
+
+                auto index_cost = idx_value.cost + r.cost;
+                auto index_basis_count = idx_value.basis_count + 1;
+
+                if (index_cost < 0) {
+                    continue;
+                }
+
+                if (reachable_index.cost > index_cost) {
+                    reachable_index.cost = index_cost;
+                    reachable_index.basis_count = index_basis_count;
+                } else if (reachable_index.cost == index_cost && reachable_index.basis_count > index_basis_count) {
+                    reachable_index.basis_count = index_basis_count;
+                }
+            }
         }
-        return;
     }
 
-    list<NextIter> iters;
-    for (const auto &automata: automatas) {
-        auto r = use_automat(idx, automata);
-
-        int next_idx = idx + (int) r.maximal_sequence.length();
-        if (next_idx == idx) continue;
-
-        int next_cost = cost + r.cost;
-
-        iters.push_back(NextIter{next_idx, next_cost, (double) next_cost / (double) next_idx, r.maximal_sequence});
-    }
-
-    basis_unit_count++;
-
-    iters.sort();
-    set<string> visited;
-    for (auto &i : iters) {
-        if (visited.find(i.str) == visited.end()) {
-            visited.insert(i.str);
-            run(i.idx, i.cost, basis_unit_count);
+    if (DEBUG) {
+        for (const auto &a : indicies) {
+            cout << a.cost << endl;
         }
     }
+
+    auto &last = indicies.back();
+    cout << last.cost << " " << last.basis_count << endl;
 }
 
 int main() {
@@ -108,6 +129,5 @@ int main() {
         cin >> base.sequence;
     }
 
-    run(0, 0, 0);
-    cout << best_cost << " " << best_basis_units_count << endl;
+    run();
 }
