@@ -52,34 +52,71 @@ Result use_automat(int idx, const Automata &automata) {
     return r;
 }
 
-void run() {
-    int idx = 0;
-    int last_idx = dna_sequence.length();
+int best_cost = numeric_limits<int>::max();
+int best_basis_units_count = 0;
 
-    int cost = 0;
-    int basis_unit_count = 0;
-
-    while (idx != last_idx) {
-        Result best = Result();
-
-        for (const auto &automata: automatas) {
-
-            auto r = use_automat(idx, automata);
-            if (r.value < best.value) {
-                best = r;
-            }
+void run(int idx, int cost, int basis_unit_count) {
+    if (cost >= best_cost) {
+        return;
+    } else if (idx == dna_sequence.length()) {
+        if (cost < best_cost) {
+            best_cost = cost;
+            best_basis_units_count = basis_unit_count;
         }
+        return;
+    }
 
-        basis_unit_count++;
-        cost += best.cost;
-        idx += best.maximal_sequence.length();
-        if (DEBUG) {
-            cout << best.maximal_sequence << endl;
+    for (const auto &automata: automatas) {
+        auto r = use_automat(idx, automata);
+
+        int next_idx = idx + (int) r.maximal_sequence.length();
+        if (next_idx == idx) continue;
+
+        int next_cost = cost + r.cost;
+        int next_basis_count = basis_unit_count + 1;
+
+        run(next_idx, next_cost, next_basis_count);
+
+        auto deletions = r.deletions;
+        while (deletions < max_deletions) {
+            deletions++;
+            next_idx--;
+            next_cost++;
+
+            run(next_idx, next_cost, next_basis_count);
         }
     }
 
-    cout << cost << " " << basis_unit_count << endl;
 }
+
+//void run() {
+//    int idx = 0;
+//    int last_idx = dna_sequence.length();
+//
+//    int cost = 0;
+//    int basis_unit_count = 0;
+//
+//    while (idx != last_idx) {
+//        Result best = Result();
+//
+//        for (const auto &automata: automatas) {
+//
+//            auto r = use_automat(idx, automata);
+//            if (r.value < best.value) {
+//                best = r;
+//            }
+//        }
+//
+//        basis_unit_count++;
+//        cost += best.cost;
+//        idx += best.maximal_sequence.length();
+//        if (DEBUG) {
+//            cout << best.maximal_sequence << endl;
+//        }
+//    }
+//
+//    cout << cost << " " << basis_unit_count << endl;
+//}
 
 int main() {
     cin >> dna_sequence;
@@ -97,5 +134,6 @@ int main() {
         if (DEBUG) cout << "Seq: " << base.sequence << " - " << base.cost << endl;
     }
 
-    run();
+    run(0, 0, 0);
+    cout << best_cost << " " << best_basis_units_count << endl;
 }
